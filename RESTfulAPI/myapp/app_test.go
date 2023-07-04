@@ -97,7 +97,7 @@ func TestDeleteUser(t *testing.T) {
 	data, _ := ioutil.ReadAll(resp.Body)           // 데이터를 확인
 	assert.Contains(string(data), "No User ID : ") // 지울게 없었다는 말이 포함되어야 함
 
-	// new one (새로 값을 넣고 다시 지움)
+	// new one (새로 값을 넣고 다시 지운다)
 	resp, err = http.Post(ts.URL+"/users", "application/json",
 		strings.NewReader(`{"first_name":"jeongbin", "last_name":"park", "email":"jeongbin@naver.com"}`))
 	assert.NoError(err)
