@@ -82,3 +82,36 @@ func TestCreatetUser(t *testing.T) {
 	assert.Equal(user.FirstName, user2.FirstName) // firstname도 같아야 한다
 
 }
+
+// test delete user
+func TestDeleteUser(t *testing.T) {
+	assert := assert.New(t)
+
+	ts := httptest.NewServer(NewHandler()) // 실제 웹 서버는 아니지만 목업하기 위한 서버
+	defer ts.Close()
+
+	req, _ := http.NewRequest("DELETE", ts.URL+"/users/1", nil) // delete는 기본적인 메소드가 아니므로 따로 메서드 설정
+	resp, err := http.DefaultClient.Do(req)                     // 반환값은 response , err
+	assert.NoError(err)
+	assert.Equal(http.StatusOK, resp.StatusCode)   // status 200
+	data, _ := ioutil.ReadAll(resp.Body)           // 데이터를 확인
+	assert.Contains(string(data), "No User ID : ") // 지울게 없었다는 말이 포함되어야 함
+
+	// new one (새로 값을 넣고 다시 지움)
+	resp, err = http.Post(ts.URL+"/users", "application/json",
+		strings.NewReader(`{"first_name":"jeongbin", "last_name":"park", "email":"jeongbin@naver.com"}`))
+	assert.NoError(err)
+	assert.Equal(http.StatusCreated, resp.StatusCode)
+
+	user := new(User)
+	err = json.NewDecoder(resp.Body).Decode(user)
+	assert.NoError(err)
+	assert.NotEqual(0, user.ID)
+
+	req, _ = http.NewRequest("DELETE", ts.URL+"/users/1", nil)
+	resp, err = http.DefaultClient.Do(req)
+	assert.NoError(err)
+	assert.Equal(http.StatusOK, resp.StatusCode)
+	data, _ = ioutil.ReadAll(resp.Body)
+	assert.Contains(string(data), "Deleted User ID : 1")
+}

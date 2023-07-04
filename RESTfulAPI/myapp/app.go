@@ -73,6 +73,25 @@ func createUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)                 // id를 추출해줌
+	id, err := strconv.Atoi(vars["id"]) // string to int
+	if err != nil {                     // 	변환에 문제가 생김
+		w.WriteHeader(http.StatusBadRequest) // 사용자가 잘못 보냄
+		fmt.Fprint(w, err)
+		return
+	}
+	_, ok := userMap[id] // map에 없는경우 (id가 없는 경우)
+	if !ok {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No User ID : ", id)
+		return
+	}
+	delete(userMap, id) // 모두 통과 시 delete
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "Deleted User ID : ", id) // delete user id
+}
+
 // NewHandler make a new myapp hanler
 func NewHandler() http.Handler {
 	userMap = make(map[int]*User)
@@ -82,6 +101,7 @@ func NewHandler() http.Handler {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/users", usersHandler).Methods("GET")       // Get일때 이 핸들러를 불러라
 	mux.HandleFunc("/users", createUserHandler).Methods("POST") // POST일때 이 핸들러를 불러라
-	mux.HandleFunc("/users/{id:[0-9]+}", getUserInfoHandler)
+	mux.HandleFunc("/users/{id:[0-9]+}", getUserInfoHandler).Methods("GET")
+	mux.HandleFunc("/users/{id:[0-9]+}", deleteUserHandler).Methods("DELETE")
 	return mux
 }
