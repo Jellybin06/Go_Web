@@ -27,7 +27,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func usersHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "Get UserInfo by /users/{id}")
+	if len(userMap) == 0 {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No Users")
+		return
+	}
+	users := []*User{}
+	for _, u := range userMap {
+		users = append(users, u)
+	}
+	data, _ := json.Marshal(users)
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, string(data))
 }
 
 func getUserInfoHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +104,37 @@ func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Deleted User ID : ", id) // delete user id
 }
 
+func updateUserHandler(w http.ResponseWriter, r *http.Request) {
+	updateUser := new(User)
+	err := json.NewDecoder(r.Body).Decode(updateUser)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, err)
+		return
+	}
+	user, ok := userMap[updateUser.ID]
+	if !ok {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "No User ID : ", updateUser.ID)
+		return
+	}
+	if updateUser.FirstName != "" {
+		user.FirstName = updateUser.FirstName
+	}
+	if updateUser.LastName != "" {
+		user.LastName = updateUser.LastName
+	}
+	if updateUser.Email != "" {
+		user.Email = updateUser.Email
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	data, _ := json.Marshal(user)
+	fmt.Fprint(w, string(data))
+
+}
+
 // NewHandler make a new myapp hanler
 func NewHandler() http.Handler {
 	userMap = make(map[int]*User)
@@ -101,6 +144,7 @@ func NewHandler() http.Handler {
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/users", usersHandler).Methods("GET")       // Get일때 이 핸들러를 불러라
 	mux.HandleFunc("/users", createUserHandler).Methods("POST") // POST일때 이 핸들러를 불러라
+	mux.HandleFunc("/users", updateUserHandler).Methods("PUT")
 	mux.HandleFunc("/users/{id:[0-9]+}", getUserInfoHandler).Methods("GET")
 	mux.HandleFunc("/users/{id:[0-9]+}", deleteUserHandler).Methods("DELETE")
 	return mux
